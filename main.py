@@ -1,5 +1,5 @@
 # --- Кооперативный онлайн-шутер (Pygame + Socket) ---
-# Клиентская часть: каждый игрок управляет персонажем и стреляет, координаты передаются на сервер.
+# Клиентская часть: каждый игрок управляет персонажем и стреляет, координаты и угол передаются на сервер.
 # Сервер рассылает состояние другим игрокам.
 
 import pygame
@@ -56,6 +56,7 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(x, y))
         self.speed = 5
         self.id = pid
+        self.angle = 0
 
     def update(self):
         if self.id == PLAYER_ID:
@@ -65,12 +66,16 @@ class Player(pygame.sprite.Sprite):
             if keys[pygame.K_a]: self.rect.x -= self.speed
             if keys[pygame.K_d]: self.rect.x += self.speed
 
-        mx, my = pygame.mouse.get_pos()
-        dx = mx - self.rect.centerx
-        dy = my - self.rect.centery
-        angle = math.degrees(math.atan2(-dy, dx)) - 90
-        self.image = pygame.transform.rotate(self.original_image, angle)
-        self.rect = self.image.get_rect(center=self.rect.center)
+            mx, my = pygame.mouse.get_pos()
+            dx = mx - self.rect.centerx
+            dy = my - self.rect.centery
+            self.angle = math.degrees(math.atan2(-dy, dx)) - 90
+            self.image = pygame.transform.rotate(self.original_image, self.angle)
+            self.rect = self.image.get_rect(center=self.rect.center)
+        else:
+            # Поворот по полученному углу
+            self.image = pygame.transform.rotate(self.original_image, self.angle)
+            self.rect = self.image.get_rect(center=self.rect.center)
 
     def fire(self):
         mx, my = pygame.mouse.get_pos()
@@ -124,6 +129,7 @@ def receive():
                     all_players.add(p)
                 else:
                     other_players[pid].rect.center = (data["x"], data["y"])
+                    other_players[pid].angle = data.get("angle", 0)
 
             elif data["type"] == "bullet":
                 bullet = Bullet(data["x"], data["y"], data["dx"], data["dy"])
@@ -155,10 +161,12 @@ while running:
                 me.fire()
 
     me.update()
-    send({"type": "player", "id": PLAYER_ID, "x": me.rect.centerx, "y": me.rect.centery})
+    send({"type": "player", "id": PLAYER_ID, "x": me.rect.centerx, "y": me.rect.centery, "angle": me.angle})
 
     bullets.update()
-    all_players.update()
+    for p in other_players.values():
+        p.update()
+
     all_players.draw(screen)
     bullets.draw(screen)
 
