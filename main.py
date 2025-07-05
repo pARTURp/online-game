@@ -19,19 +19,8 @@ PLAYER_IMG = 'player.png'
 BULLET_IMG = 'bullet_game3.png'
 BACKGROUND_IMG = 'background_game1.jpg'
 
-# --- Получение IP адреса сервера автоматически (для локальной сети) ---
-def get_local_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(('10.255.255.255', 1))
-        IP = s.getsockname()[0]
-    except:
-        IP = '127.0.0.1'
-    finally:
-        s.close()
-    return IP
-
-SERVER_IP = input(f"Введите IP сервера (Enter для автопоиска): ") or get_local_ip()
+# --- Ввод IP адреса сервера вручную ---
+SERVER_IP = input("Введите IP сервера: ")
 print(f"Подключение к серверу {SERVER_IP}:{PORT}...")
 
 # --- Инициализация Pygame ---
