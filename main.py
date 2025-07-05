@@ -136,6 +136,11 @@ def receive():
             elif data["type"] == "bullet":
                 bullet = Bullet(data["x"], data["y"], data["dx"], data["dy"])
                 bullets.add(bullet)
+            elif data["type"] == "disconnect":
+                pid = data["id"]
+                if pid in other_players:
+                    all_players.remove(other_players[pid])
+                    del other_players[pid]
         except:
             break
 
