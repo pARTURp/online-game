@@ -20,7 +20,7 @@ BULLET_IMG = 'bullet_game3.png'
 BACKGROUND_IMG = 'background_game1.jpg'
 
 # --- Ввод IP адреса сервера вручную ---
-SERVER_IP = input("Введите IP сервера: ")
+SERVER_IP = '192.168.0.105'
 print(f"Подключение к серверу {SERVER_IP}:{PORT}...")
 
 # --- Инициализация Pygame ---
@@ -61,10 +61,10 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         if self.id == PLAYER_ID:
             keys = pygame.key.get_pressed()
-            if keys[pygame.K_w]: self.rect.y -= self.speed
-            if keys[pygame.K_s]: self.rect.y += self.speed
-            if keys[pygame.K_a]: self.rect.x -= self.speed
-            if keys[pygame.K_d]: self.rect.x += self.speed
+            if keys[pygame.K_w] and self.rect.top > 0: self.rect.y -= self.speed
+            if keys[pygame.K_s] and self.rect.bottom < HEIGHT: self.rect.y += self.speed
+            if keys[pygame.K_a] and self.rect.left > 0: self.rect.x -= self.speed
+            if keys[pygame.K_d] and self.rect.right < WIDTH: self.rect.x += self.speed
 
             mx, my = pygame.mouse.get_pos()
             dx = mx - self.rect.centerx
@@ -73,7 +73,6 @@ class Player(pygame.sprite.Sprite):
             self.image = pygame.transform.rotate(self.original_image, self.angle)
             self.rect = self.image.get_rect(center=self.rect.center)
         else:
-            # Поворот по полученному углу
             self.image = pygame.transform.rotate(self.original_image, self.angle)
             self.rect = self.image.get_rect(center=self.rect.center)
 
@@ -119,12 +118,15 @@ def receive():
     while True:
         try:
             msg = client.recv(1024)
+            if not msg:
+                break
             data = json.loads(msg.decode())
 
             if data["type"] == "player" and data["id"] != PLAYER_ID:
                 pid = data["id"]
                 if pid not in other_players:
                     p = Player(data["x"], data["y"], pid)
+                    p.angle = data.get("angle", 0)
                     other_players[pid] = p
                     all_players.add(p)
                 else:
@@ -134,7 +136,6 @@ def receive():
             elif data["type"] == "bullet":
                 bullet = Bullet(data["x"], data["y"], data["dx"], data["dy"])
                 bullets.add(bullet)
-
         except:
             break
 
@@ -164,9 +165,10 @@ while running:
     send({"type": "player", "id": PLAYER_ID, "x": me.rect.centerx, "y": me.rect.centery, "angle": me.angle})
 
     bullets.update()
-    for p in other_players.values():
+    for pid, p in other_players.items():
         p.update()
 
+    screen.blit(background, (0, 0))
     all_players.draw(screen)
     bullets.draw(screen)
 
